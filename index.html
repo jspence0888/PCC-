@@ -105,14 +105,32 @@
             margin-bottom: 10px;
         }
 
-        .time-row {
+        .time-row, .rate-row {
             display: flex;
             gap: 10px;
+            align-items: flex-end;
         }
 
-        .time-row .input-group {
+        .rate-row {
+            margin-bottom: 12px;
+        }
+
+        .time-row .input-group, .rate-row .input-group {
             flex: 1;
             margin-bottom: 0;
+        }
+
+        .per-divider {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--secondary-text);
+            padding-bottom: 12px;
+            text-align: center;
+        }
+
+        .rate-time-inputs {
+            display: flex;
+            gap: 6px;
         }
 
         label {
@@ -139,6 +157,13 @@
             outline: none;
             border-color: var(--accent-color);
             background-color: #fff;
+        }
+
+        .section-divider {
+            border: 0;
+            height: 1px;
+            background: #e5e5ea;
+            margin: 12px 0;
         }
 
         /* Fixed Bottom Summary Bar */
@@ -217,10 +242,25 @@
                     <span class="entry-title">Shift #${entryCounter}</span>
                     <button class="delete-btn" type="button" onclick="removeEntry(this)">✕</button>
                 </div>
-                <div class="input-group">
-                    <label>Actual Hourly Rate ($)</label>
-                    <input type="number" class="rate" inputmode="decimal" placeholder="e.g. 35.00">
+                
+                <div class="rate-row">
+                    <div class="input-group">
+                        <label>Amount Paid ($)</label>
+                        <input type="number" class="pay-amount" inputmode="decimal" placeholder="e.g. 100">
+                    </div>
+                    <div class="per-divider">PER</div>
+                    <div class="input-group">
+                        <label>Rate Time</label>
+                        <div class="rate-time-inputs">
+                            <input type="number" class="rate-hours" inputmode="numeric" placeholder="Hrs">
+                            <input type="number" class="rate-mins" inputmode="numeric" placeholder="Mins">
+                        </div>
+                    </div>
                 </div>
+
+                <hr class="section-divider">
+
+                <label style="margin-top: 8px;">Time Worked</label>
                 <div class="time-row">
                     <div class="input-group">
                         <label>Hours</label>
@@ -235,7 +275,6 @@
 
             container.appendChild(card);
 
-            // Attach dynamic input listeners to the newly created elements
             const inputs = card.querySelectorAll('input');
             inputs.forEach(input => {
                 input.addEventListener('input', calculateTotal);
@@ -257,12 +296,23 @@
             let grandTotalConvertedHours = 0;
 
             cards.forEach(card => {
-                const rate = parseFloat(card.querySelector('.rate').value) || 0;
+                const payAmount = parseFloat(card.querySelector('.pay-amount').value) || 0;
+                const rateHours = parseFloat(card.querySelector('.rate-hours').value) || 0;
+                const rateMins = parseFloat(card.querySelector('.rate-mins').value) || 0;
+
                 const hours = parseFloat(card.querySelector('.hours').value) || 0;
                 const mins = parseFloat(card.querySelector('.mins').value) || 0;
 
+                const rateTimeSpanHours = rateHours + (rateMins / 60);
+                
+                // Calculate effective hourly rate (Amount / Rate Time in Hours)
+                let effectiveHourlyRate = 0;
+                if (rateTimeSpanHours > 0) {
+                    effectiveHourlyRate = payAmount / rateTimeSpanHours;
+                }
+
                 const totalHoursWorked = hours + (mins / 60);
-                const totalEarnings = rate * totalHoursWorked;
+                const totalEarnings = effectiveHourlyRate * totalHoursWorked;
                 const convertedHours = totalEarnings / 25;
 
                 grandTotalConvertedHours += convertedHours;
@@ -282,10 +332,8 @@
             document.getElementById('totalDecimal').innerText = `(${grandTotalConvertedHours.toFixed(2)} decimal hrs)`;
         }
 
-        // Attach event listener to button explicitly
         document.getElementById('addBtn').addEventListener('click', addEntry);
 
-        // Run once on load to ensure 1 default entry exists immediately
         window.addEventListener('DOMContentLoaded', () => {
             addEntry();
         });
